@@ -38,7 +38,7 @@
         .selector {
             margin-bottom: 30px;
         }
-        select {
+        select, input[type="text"] {
             padding: 12px;
             font-size: 18px;
             background-color: #333;
@@ -46,7 +46,15 @@
             border: 1px solid #555;
             border-radius: 5px;
             width: 100%;
-            cursor: pointer;
+            box-sizing: border-box;
+        }
+        input[type="text"]::placeholder {
+            color: #888;
+        }
+        input[type="text"] {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            border: 2px solid #005f73;
         }
         .action-btn {
             background-color: #3a3a3a;
@@ -84,6 +92,29 @@
         .link-btn:hover {
             background-color: #0a9396;
         }
+        .check-btn {
+            background-color: #2a9d8f;
+            border-color: #21867a;
+            margin-top: 0;
+        }
+        .check-btn:hover {
+            background-color: #2fc4b2;
+        }
+        .surrender-btn {
+            background-color: transparent;
+            color: #aaa;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 5px;
+            margin-bottom: 15px;
+            text-transform: none;
+            width: auto;
+        }
+        .surrender-btn:hover {
+            color: #fff;
+        }
         .next-btn {
             background-color: #9b2226;
             border-color: #6a040f;
@@ -92,11 +123,24 @@
         .next-btn:hover {
             background-color: #ae2012;
         }
-        .solution {
-            color: #e9c46a;
+        .feedback {
+            font-weight: bold;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: none;
         }
-        .keyword {
-            color: #2a9d8f;
+        .success { color: #2a9d8f; }
+        .error { color: #e76f51; }
+        .solution { color: #e9c46a; }
+        .keyword { color: #e9c46a; }
+        
+        /* Obszar, który pojawia się dopiero po rozwiązaniu zagadki */
+        #postSolveArea {
+            display: none;
+            margin-top: 20px;
+            border-top: 1px dashed #555;
+            padding-top: 20px;
         }
     </style>
 </head>
@@ -104,7 +148,7 @@
 
 <div class="container">
     <h1>Dziennik 29: Zapomnienie</h1>
-    <p>Wybierz numer zagadki, aby odkryć podpowiedzi i rozwiązania.</p>
+    <p>Wybierz numer zagadki i sprawdź swoje rozwiązania.</p>
     
     <div class="selector">
         <select id="puzzleSelect">
@@ -122,19 +166,27 @@
         <button class="action-btn" onclick="toggleReveal('hint2')">Pokaż Podpowiedź 2</button>
         <div id="hint2" class="reveal-box"></div>
 
-        <button class="action-btn" onclick="toggleReveal('solution')">Pokaż Rozwiązanie</button>
-        <div id="solution" class="reveal-box solution"></div>
+        <!-- Sekcja wpisywania odpowiedzi -->
+        <div style="text-align: center; margin-top: 20px;">
+            <input type="text" id="answerInput" placeholder="Wpisz rozwiązanie tutaj..." autocomplete="off">
+            <button class="action-btn check-btn" onclick="checkAnswer()">Sprawdź odpowiedź</button>
+            <div id="feedbackMsg" class="feedback"></div>
+            
+            <button class="surrender-btn" onclick="surrender()">Poddaję się - pokaż rozwiązanie</button>
+            <div id="solution" class="reveal-box solution"></div>
+        </div>
 
-        <button class="action-btn" onclick="toggleReveal('keyword')">Pokaż Hasło Kodowe</button>
-        <div id="keyword" class="reveal-box keyword"></div>
-
-        <!-- Nowy guzik "Dalej" -->
-        <button id="btnNext" class="action-btn next-btn" onclick="nextPuzzle()">Dalej ➔</button>
+        <!-- Sekcja pojawiająca się po rozwiązaniu -->
+        <div id="postSolveArea">
+            <button class="action-btn" onclick="toggleReveal('keyword')">Pokaż Hasło Kodowe</button>
+            <div id="keyword" class="reveal-box keyword"></div>
+            
+            <button id="btnNext" class="action-btn next-btn" onclick="nextPuzzle()">Dalej ➔</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // Baza danych na podstawie pliku
     const puzzleData = {
         "121": { h1: "przyjrzyj się literom", h2: "to jest naprawdę proste ;)", sol: "1389", key: "cztery" },
         "122": { h1: "przyjrzyj się literom", h2: "przenieś cyfry do odpowiednich pól", sol: "bieg", key: "dwa" },
@@ -182,9 +234,13 @@
     const contentArea = document.getElementById('contentArea');
     const btnLink = document.getElementById('btnLink');
     const btnNext = document.getElementById('btnNext');
+    const postSolveArea = document.getElementById('postSolveArea');
+    const feedbackMsg = document.getElementById('feedbackMsg');
+    const answerInput = document.getElementById('answerInput');
     let currentLink = "";
+    let currentSolution = "";
 
-    // Generowanie opcji wyboru
+    // Generowanie opcji
     for (let i = 121; i <= 160; i++) {
         let opt = document.createElement('option');
         opt.value = i;
@@ -192,22 +248,28 @@
         selectEl.appendChild(opt);
     }
 
-    // Funkcja ładująca zagadkę na podstawie wybranego numeru
+    // Funkcja ładująca zagadkę
     function loadPuzzle(pId) {
         const data = puzzleData[pId];
         
-        // Ukrywamy sekcje z odpowiedziami
+        // Resetowanie interfejsu
         ['hint1', 'hint2', 'solution', 'keyword'].forEach(id => {
             document.getElementById(id).style.display = 'none';
         });
-
+        postSolveArea.style.display = 'none';
+        feedbackMsg.style.display = 'none';
+        answerInput.value = "";
+        answerInput.disabled = false;
+        
         if (data) {
             contentArea.style.display = 'block';
             document.getElementById('hint1').innerText = data.h1;
             document.getElementById('hint2').innerText = data.h2;
-            document.getElementById('solution').innerText = data.sol;
+            document.getElementById('solution').innerText = "Rozwiązanie: " + data.sol;
             document.getElementById('keyword').innerText = data.key;
+            currentSolution = data.sol.toString().trim().toLowerCase();
 
+            // Ustawienie linku
             if (data.link) {
                 btnLink.style.display = 'block';
                 currentLink = data.link;
@@ -216,7 +278,7 @@
                 currentLink = "";
             }
 
-            // Obsługa ukrywania przycisku "Dalej" dla ostatniej zagadki
+            // Przycisk Dalej
             if (parseInt(pId) === 160) {
                 btnNext.style.display = 'none';
             } else {
@@ -225,25 +287,89 @@
         }
     }
 
-    // Nasłuchiwanie wyboru z listy
     selectEl.addEventListener('change', function() {
         loadPuzzle(this.value);
     });
 
-    // Obsługa przycisku "Dalej"
+    // Umożliwienie sprawdzania Enterem
+    answerInput.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+            checkAnswer();
+        }
+    });
+
+    function checkAnswer() {
+        const userAnswer = answerInput.value.trim().toLowerCase();
+        
+        // Zagadka 155 ma podwójną odpowiedź z ENG, pozwalamy na obie wersje
+        let isCorrect = false;
+        if (currentSolution.includes("eng:")) {
+            // specjalny przypadek dla 155 "oszustwo (ENG: DECEPTION)"
+            if (userAnswer === "oszustwo" || userAnswer === "deception") {
+                isCorrect = true;
+            }
+        } else if (currentSolution.includes("przedział:")) {
+            // specjalny przypadek dla 133 "przedział: {3646-3946}"
+            // Przyjmujemy poprawne wpisanie dowolnej liczby w tym przedziale, 
+            // lub wpisanie po prostu poprawnego wzoru
+            let num = parseInt(userAnswer);
+            if (num >= 3646 && num <= 3946) {
+                isCorrect = true;
+            }
+            if (userAnswer === "3646-3946") isCorrect = true;
+        } else {
+            // Zwykłe porównanie
+            isCorrect = (userAnswer === currentSolution);
+        }
+
+        if (userAnswer === "") {
+            feedbackMsg.innerText = "Wpisz odpowiedź!";
+            feedbackMsg.className = "feedback error";
+            feedbackMsg.style.display = "block";
+            return;
+        }
+
+        if (isCorrect) {
+            triggerSuccess();
+        } else {
+            feedbackMsg.innerText = "Niestety to nie to. Spróbuj jeszcze raz!";
+            feedbackMsg.className = "feedback error";
+            feedbackMsg.style.display = "block";
+            
+            // Lekkie trzęsienie ekranem błędu
+            answerInput.style.border = "2px solid #e76f51";
+            setTimeout(() => answerInput.style.border = "2px solid #005f73", 500);
+        }
+    }
+
+    function triggerSuccess() {
+        feedbackMsg.innerText = "Gratulacje! Odpowiedź poprawna.";
+        feedbackMsg.className = "feedback success";
+        feedbackMsg.style.display = "block";
+        answerInput.disabled = true; // Zablokowanie po poprawnej odp
+        answerInput.style.border = "2px solid #2a9d8f";
+        
+        // Pokaż przycisk dalej i hasło kodowe
+        postSolveArea.style.display = "block";
+    }
+
+    function surrender() {
+        document.getElementById('solution').style.display = 'block';
+        triggerSuccess(); // Aby odblokować możliwość pójścia dalej
+        feedbackMsg.innerText = "Rozwiązanie zostało ujawnione.";
+        feedbackMsg.className = "feedback solution";
+    }
+
     function nextPuzzle() {
         let currentValue = parseInt(selectEl.value);
         if (currentValue && currentValue < 160) {
             let nextValue = currentValue + 1;
-            selectEl.value = nextValue; // Zmiana na liście wyboru
-            loadPuzzle(nextValue);      // Wczytanie nowych danych
-            
-            // Przewinięcie widoku do samej góry (przydatne na telefonach)
+            selectEl.value = nextValue;
+            loadPuzzle(nextValue);
             window.scrollTo({ top: 0, behavior: 'smooth' }); 
         }
     }
 
-    // Funkcja odsłaniająca
     function toggleReveal(id) {
         const el = document.getElementById(id);
         if (el.style.display === 'none' || el.style.display === '') {
