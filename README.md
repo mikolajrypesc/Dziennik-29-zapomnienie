@@ -1,0 +1,1 @@
+# Dziennik-29-zapomnienie
