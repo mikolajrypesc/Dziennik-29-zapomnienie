@@ -84,6 +84,14 @@
         .link-btn:hover {
             background-color: #0a9396;
         }
+        .next-btn {
+            background-color: #9b2226;
+            border-color: #6a040f;
+            margin-top: 25px;
+        }
+        .next-btn:hover {
+            background-color: #ae2012;
+        }
         .solution {
             color: #e9c46a;
         }
@@ -119,11 +127,14 @@
 
         <button class="action-btn" onclick="toggleReveal('keyword')">Pokaż Hasło Kodowe</button>
         <div id="keyword" class="reveal-box keyword"></div>
+
+        <!-- Nowy guzik "Dalej" -->
+        <button id="btnNext" class="action-btn next-btn" onclick="nextPuzzle()">Dalej ➔</button>
     </div>
 </div>
 
 <script>
-    // Pełna baza danych na podstawie pliku "Dziennik 29 zapomnienie PDF.pdf"
+    // Baza danych na podstawie pliku
     const puzzleData = {
         "121": { h1: "przyjrzyj się literom", h2: "to jest naprawdę proste ;)", sol: "1389", key: "cztery" },
         "122": { h1: "przyjrzyj się literom", h2: "przenieś cyfry do odpowiednich pól", sol: "bieg", key: "dwa" },
@@ -170,9 +181,10 @@
     const selectEl = document.getElementById('puzzleSelect');
     const contentArea = document.getElementById('contentArea');
     const btnLink = document.getElementById('btnLink');
+    const btnNext = document.getElementById('btnNext');
     let currentLink = "";
 
-    // Generowanie opcji wyboru (od 121 do 160)
+    // Generowanie opcji wyboru
     for (let i = 121; i <= 160; i++) {
         let opt = document.createElement('option');
         opt.value = i;
@@ -180,12 +192,11 @@
         selectEl.appendChild(opt);
     }
 
-    // Nasłuchiwanie na zmianę wyboru w liście
-    selectEl.addEventListener('change', function() {
-        const pId = this.value;
+    // Funkcja ładująca zagadkę na podstawie wybranego numeru
+    function loadPuzzle(pId) {
         const data = puzzleData[pId];
         
-        // Ukrywamy wszystkie sekcje przy zmianie numeru
+        // Ukrywamy sekcje z odpowiedziami
         ['hint1', 'hint2', 'solution', 'keyword'].forEach(id => {
             document.getElementById(id).style.display = 'none';
         });
@@ -204,10 +215,35 @@
                 btnLink.style.display = 'none';
                 currentLink = "";
             }
+
+            // Obsługa ukrywania przycisku "Dalej" dla ostatniej zagadki
+            if (parseInt(pId) === 160) {
+                btnNext.style.display = 'none';
+            } else {
+                btnNext.style.display = 'block';
+            }
         }
+    }
+
+    // Nasłuchiwanie wyboru z listy
+    selectEl.addEventListener('change', function() {
+        loadPuzzle(this.value);
     });
 
-    // Funkcja odsłaniająca/ukrywająca dany element
+    // Obsługa przycisku "Dalej"
+    function nextPuzzle() {
+        let currentValue = parseInt(selectEl.value);
+        if (currentValue && currentValue < 160) {
+            let nextValue = currentValue + 1;
+            selectEl.value = nextValue; // Zmiana na liście wyboru
+            loadPuzzle(nextValue);      // Wczytanie nowych danych
+            
+            // Przewinięcie widoku do samej góry (przydatne na telefonach)
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        }
+    }
+
+    // Funkcja odsłaniająca
     function toggleReveal(id) {
         const el = document.getElementById(id);
         if (el.style.display === 'none' || el.style.display === '') {
@@ -217,7 +253,6 @@
         }
     }
 
-    // Funkcja otwierająca okno z linkiem do zagadki multimedialnej
     function openLink() {
         if (currentLink) {
             window.open(currentLink, '_blank');
