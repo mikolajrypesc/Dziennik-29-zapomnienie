@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dziennik 29: Zapomnienie - Pomocnik</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 26px;
+            text-transform: uppercase;
+        }
+        p {
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+        .selector {
+            margin-bottom: 30px;
+        }
+        select {
+            padding: 12px;
+            font-size: 18px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 5px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .action-btn {
+            background-color: #3a3a3a;
+            color: #ffffff;
+            border: 1px solid #555;
+            padding: 15px 20px;
+            margin: 10px 0;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-transform: uppercase;
+        }
+        .action-btn:hover {
+            background-color: #555;
+        }
+        .reveal-box {
+            background-color: #2a2a2a;
+            padding: 15px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #888;
+            border-radius: 4px;
+            display: none;
+            font-size: 18px;
+            word-wrap: break-word;
+            text-align: left;
+        }
+        .link-btn {
+            background-color: #005f73;
+            border-color: #003f4d;
+        }
+        .link-btn:hover {
+            background-color: #0a9396;
+        }
+        .solution {
+            color: #e9c46a;
+        }
+        .keyword {
+            color: #2a9d8f;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Dziennik 29: Zapomnienie</h1>
+    <p>Wybierz numer zagadki, aby odkryć podpowiedzi i rozwiązania.</p>
+    
+    <div class="selector">
+        <select id="puzzleSelect">
+            <option value="" disabled selected>Wybierz zagadkę (121-160)...</option>
+            <!-- Opcje zostaną wygenerowane przez JS -->
+        </select>
+    </div>
+
+    <div id="contentArea" style="display: none;">
+        <button id="btnLink" class="action-btn link-btn" style="display: none;" onclick="openLink()">🔗 Zagadka multimedialna</button>
+        
+        <button class="action-btn" onclick="toggleReveal('hint1')">Pokaż Podpowiedź 1</button>
+        <div id="hint1" class="reveal-box"></div>
+
+        <button class="action-btn" onclick="toggleReveal('hint2')">Pokaż Podpowiedź 2</button>
+        <div id="hint2" class="reveal-box"></div>
+
+        <button class="action-btn" onclick="toggleReveal('solution')">Pokaż Rozwiązanie</button>
+        <div id="solution" class="reveal-box solution"></div>
+
+        <button class="action-btn" onclick="toggleReveal('keyword')">Pokaż Hasło Kodowe</button>
+        <div id="keyword" class="reveal-box keyword"></div>
+    </div>
+</div>
+
+<script>
+    // Pełna baza danych na podstawie pliku "Dziennik 29 zapomnienie PDF.pdf"
+    const puzzleData = {
+        "121": { h1: "przyjrzyj się literom", h2: "to jest naprawdę proste ;)", sol: "1389", key: "cztery" },
+        "122": { h1: "przyjrzyj się literom", h2: "przenieś cyfry do odpowiednich pól", sol: "bieg", key: "dwa" },
+        "123": { h1: "dwa + cztery to...", h2: "żeby wyjść z labiryntu nie musisz przechodzić przez wszystkie cyfry", sol: "6357", key: "brwi" },
+        "124": { link: "https://www.journal29.com/cloud/", h1: "poszukaj symboli", h2: "policz symbole i użyj równania", sol: "160", key: "snob" },
+        "125": { h1: "czegoś tu brakuje...", h2: "alfabet", sol: "jęk", key: "nato" },
+        "126": { h1: "dwukrotnie = binarnie", h2: "binarnie na dziesiętnie", sol: "trzy", key: "cykl" },
+        "127": { h1: "123 do 124 oraz 125 do 126", h2: "wina", sol: "obcy", key: "klucz" },
+        "128": { link: "https://www.journal29.com/stones/", h1: "przyjrzyj się lontowi", h2: "rok dni = miesięcy; który symbol nie pasuje?", sol: "maj", key: "cisza" },
+        "129": { h1: "(brak)", h2: "(brak)", sol: "161", key: "względności" },
+        "130": { h1: "godzina 12=0°", h2: "rysuj na zewnątrz", sol: "dane", key: "chemii" },
+        "131": { h1: "gra w statki", h2: "użyj par liter z pierwszej strony i skreśl je z planszy. Zwróć uwagę na to, gdzie znajdują się „puste\" współrzędne, ponieważ pomoże ci to zidentyfikować statki, które zostały już wyeliminowane.", sol: "membrana", key: "siedem" },
+        "132": { link: "https://www.journal29.com/silence/", h1: "które klawisze?", h2: "poszukaj numerów", sol: "sto lat", key: "miasto" },
+        "133": { h1: "królowa to żona", h2: "odpowiedź nie jest jednoznaczna - dodaj swój rok urodzenia", sol: "przedział: {3646-3946}", key: "obydwa" },
+        "134": { h1: "gdzieś to widziałem/am...", h2: "okładka?", sol: "13", key: "1000" },
+        "135": { h1: "przyjrzyj się uważnie", h2: "mnożenie?", sol: "37534", key: "korpo" },
+        "136": { h1: "spójrz przez dziurkę od klucza", h2: "nie kręć nosem :)", sol: "3325", key: "królik" },
+        "137": { h1: "(brak)", h2: "(brak)", sol: "kompas", key: "nobel" },
+        "138": { link: "https://www.journal29.com/cave/", h1: "N=0", h2: "pod jakim kątem się układa?", sol: "tyran", key: "glina" },
+        "139": { h1: "usuń po 2 kamienie", h2: "na co się to składa?", sol: "charyzma", key: "utarg" },
+        "140": { h1: "gdzieś to widziałem/am...", h2: "(^(00)^)", sol: "1126", key: "fort" },
+        "141": { h1: "dwa razy z rzędu dwa razy", h2: "złóż cyfry do siebie", sol: "146864316", key: "pierwsze" },
+        "142": { h1: "co widzisz?", h2: "odejmij litery", sol: "sin", key: "afrodyta" },
+        "143": { h1: "->", h2: "braille?", sol: "cel", key: "nobel" },
+        "144": { h1: "chiński zodiak", h2: "które zwierzę w 1100?", sol: "smok", key: "emotikon" },
+        "145": { link: "https://www.journal29.com/apparatus/", h1: "ciekawe na co składają się znaki...", h2: "która osa na okładce?", sol: "450", key: "2000" },
+        "146": { h1: "czym się różni klucz 138 od miny?", h2: "hexagon = usuń literę, koniczyna = zamień kolejność liter", sol: "sok", key: "światło" },
+        "147": { h1: "połącz kropki", h2: "liczby pierwsze są pierwsze", sol: "jednorożec", key: "strony" },
+        "148": { h1: "co widzisz?", h2: "dopasuj nazwy znalezionych zwierząt", sol: "żelazo", key: "1982" },
+        "149": { h1: "jaki alfabet używa flag?", h2: "ostatnia wygląda znajomo...", sol: "Berno", key: "koala" },
+        "150": { h1: "laureat nagrody to...", h2: "odejmij litery", sol: "rnug", key: "tylko" },
+        "151": { h1: "policz zęby", h2: "2, 3 oraz 2, 6", sol: "mrok", key: "nie-światło" },
+        "152": { h1: "przestaw kostkę", h2: "stopka wydawnicza", sol: "888", key: "nas" },
+        "153": { link: "https://www.journal29.com/lightson/", h1: "ENG: klucze składają się na \"LIGHT\" ORAZ \"SON\" (zapalone światło)", h2: "zgaś światło", sol: "549721", key: "wyzwoli" },
+        "154": { h1: "Klawiatura: 2=ABC, 3=DEF, 4=GHI, 5=JKL, 6=MNO, 7=PQRS, 8=TUV, 9=WXYZ", h2: "(brak)", sol: "328", key: "liczby" },
+        "155": { link: "https://www.journal29.com/dial/", h1: "przyjrzyj się uważnie", h2: "wystarczy wcisnąć 1 raz", sol: "oszustwo (ENG: DECEPTION)", key: "generują" },
+        "156": { h1: "zacznij się przemieszczać zaczynając od pajęczyny", h2: "przyłóż plastik", sol: "chaos", key: "grupowo" },
+        "157": { link: "https://www.journal29.com/watch/", h1: "jak to połączyć...", h2: "czegoś tu brakuje...", sol: "siedem", key: "działania" },
+        "158": { h1: "MINO", h2: "Poruszaj się: LEWO-PRAWO-GÓRA-DÓŁ", sol: "52354", key: "noc się kończy" },
+        "159": { link: "https://www.journal29.com/undergo/", h1: "Mastercard", h2: "znaki z książki i obrazka łączą się", sol: "dam", key: "ulicznik" },
+        "160": { h1: "jak to połączyć...", h2: "niektóre litery są zbędne", sol: "świtanie", key: "DOTARŁEŚ NA KONIEC" }
+    };
+
+    const selectEl = document.getElementById('puzzleSelect');
+    const contentArea = document.getElementById('contentArea');
+    const btnLink = document.getElementById('btnLink');
+    let currentLink = "";
+
+    // Generowanie opcji wyboru (od 121 do 160)
+    for (let i = 121; i <= 160; i++) {
+        let opt = document.createElement('option');
+        opt.value = i;
+        opt.innerHTML = "Zagadka " + i;
+        selectEl.appendChild(opt);
+    }
+
+    // Nasłuchiwanie na zmianę wyboru w liście
+    selectEl.addEventListener('change', function() {
+        const pId = this.value;
+        const data = puzzleData[pId];
+        
+        // Ukrywamy wszystkie sekcje przy zmianie numeru
+        ['hint1', 'hint2', 'solution', 'keyword'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
+
+        if (data) {
+            contentArea.style.display = 'block';
+            document.getElementById('hint1').innerText = data.h1;
+            document.getElementById('hint2').innerText = data.h2;
+            document.getElementById('solution').innerText = data.sol;
+            document.getElementById('keyword').innerText = data.key;
+
+            if (data.link) {
+                btnLink.style.display = 'block';
+                currentLink = data.link;
+            } else {
+                btnLink.style.display = 'none';
+                currentLink = "";
+            }
+        }
+    });
+
+    // Funkcja odsłaniająca/ukrywająca dany element
+    function toggleReveal(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === 'none' || el.style.display === '') {
+            el.style.display = 'block';
+        } else {
+            el.style.display = 'none';
+        }
+    }
+
+    // Funkcja otwierająca okno z linkiem do zagadki multimedialnej
+    function openLink() {
+        if (currentLink) {
+            window.open(currentLink, '_blank');
+        }
+    }
+</script>
+</body>
+</html>
